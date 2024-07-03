@@ -22,13 +22,25 @@ getname(){
 	else name="$(basename -s .sh "$0")"; fi
 }
 
+:<<-"SHOULD_DELETE"
+	Function that checks whever or not a user wants to delete an already existing file
+	This function exits the script if the user doesn't want to delete the file
+SHOULD_DELETE
+should_delete(){
+	read -p "File $1 already exists. Proceed to deletion ?[y/n]
+$> " user_answer
+	if [ "$user_answer" == 'y' ] ; then return 0 ; fi
+	echo "Not proceeding with script execution"
+	kill -INT $$
+}
+
 :<<-CREATE_FILE
 	Function that creates a file with the given filename as an input. If no file is provided, do nothing
 	If the file can't be created, return an error
 CREATE_FILE
 create_file(){
 	if [ "$1" = "" ] ; then return 1; fi
-	if [ -f "$1" ] ; then shred -f -n 10 -u -z "$1"; fi
+	if [ -f "$1" ] && should_delete "$1" ; then shred -f -n 10 -u -z "$1" ; fi
 	if [ ! -d "$(dirname "$1")" ] ; then mkdir -p "$(dirname "$1")" ; fi
 	if ! touch "$1" ; then echo "Couldn't create file : $1"; return 1 ; fi
 	return 0;
@@ -56,7 +68,7 @@ getpaths(){
 	if [ "$2" = "" ] ; then class_header="$1".h ; class_source="$1".cpp; return 0; fi
 	dir="$2"
 	add_slash_dir
-	if [ "$3" = "" ] ; then class_header="${dir}/${1}.h" ; class_source="${dir}/${1}.cpp"; return 0; fi
+	if [ "$3" = "" ] ; then class_header="${dir}${1}.h" ; class_source="${dir}${1}.cpp"; return 0; fi
 	class_header="${dir}${1}.h"
 	dir="$3"
 	add_slash_dir
